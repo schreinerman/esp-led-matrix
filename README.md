@@ -33,6 +33,8 @@ The firmware can be installed via the esptool utility. There are two different r
 - vX.X_esp32_esp-led-matrix.bin for ESP32
 - vX.X_esp8266_esp-led-matrix.bin for ESP8266 or ESP8285
 
+See also https://github.com/schreinerman/esp-led-matrix/releases/ for current available binaries.
+
 The esptool can be installed via pip:
 ```python3 -m pip install esptool```
 
