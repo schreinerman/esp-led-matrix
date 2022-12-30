@@ -59,3 +59,10 @@ v1.0_esp32_esp-led-matrix.bin
 
 ## Hardware connection - ATOMLite - ESP32
 ![ATOMLite](doc/atomlite.jpg)
+
+## Components
+
+All parts can be shopped for example at AZ-Delivery.de:
+
+- D1 Mini - ESP8266 Board: https://www.az-delivery.de/products/d1-mini
+- 16x16 LED Matrix: https://www.az-delivery.de/products/rgb-led-panel-ws2812b-16x16-256-leds-flexibel-led-modul-5050smd-ic-einzeladressierbare-vollfarbfunktionen-mit-dc5v-kompatibel-mit-raspberry-pi
