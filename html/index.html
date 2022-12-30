@@ -1,0 +1,352 @@
+<html>
+<head>
+    <!-- meta http-equiv='refresh' content='5'/-->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <link rel="mask-icon" href="favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <link rel="shortcut icon" href="favicon/favicon.ico">
+    <meta name="msapplication-TileColor" content="#3b3b3b">
+    <meta name="msapplication-config" content="favicon/browserconfig.xml">
+    <meta name="theme-color" content="#3b3b3b">
+
+    <title>Embedded Matrix</title>
+    <script src="mtxeditor.js"></script>
+    <script src="queue.js"></script>
+
+    <script>
+        var mtxEdit = new MatrixEditor(16,16);
+        var sending = 500;
+        var txQueue = new Queue();
+        function execcmd(cmd,val) {
+            fetch('/cmd/' + cmd + '/' + val);
+        }
+        function requestFullScreen() {
+            const _element = document.documentElement;
+            if (_element.requestFullscreen) {
+            _element.requestFullscreen();
+            } else {
+            if (_element.mozRequestFullScreen) {
+            _element.mozRequestFullScreen();
+            } else {
+            if (_element.webkitRequestFullscreen) {
+                _element.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            }
+            }
+            }
+        }
+
+        /**
+         * Download sketch as cpp-file
+         **/
+         function download()
+        {
+            mtxEdit.download("image.cpp");
+        }
+
+        function downloadImage() {
+            var link = document.createElement('a');
+            link.download = 'matrix.png';
+            link.href = mtxEdit.canvas.handle.toDataURL();
+            link.click();
+        }
+
+        function uploadImage() {
+            document.getElementById('inp').click();
+        }
+        function readFile(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                mtxEdit.loadImage(e.target.result);
+            }
+            reader.readAsDataURL(file)
+        }
+
+        /**
+         * Clear all
+         **/
+        function clearAll()
+        {
+            if (confirm("Warning: Erase all content?"))
+            {
+                mtxEdit.clear();
+                var payload = {
+                    i: 'c'
+                };
+                var data = new FormData();
+                data.append( "json", JSON.stringify( payload ) );
+                txQueue.enqueue(data);
+            }
+        }
+
+        /**
+         * allback as soon color was set
+         * 
+         * @param {*} event event parameters
+         * 
+         **/
+        function onColorSet(event)
+        {
+            setColor(event.target.value); 
+        }
+
+         /**
+         * Set new color
+         * 
+         * @param {*} color new color
+         * 
+         **/
+        function setColor(color)
+        {
+            mtxEdit.setColor(color); 
+            var colorPicker = document.getElementById("colorpicker");
+            var currentColor = document.getElementById("currentcolor");
+            if (colorPicker.value != color)
+            {
+                colorPicker.value = color;
+            }
+            currentColor.style.backgroundColor = color;
+        }
+
+        /**
+         * Open color picker
+         **/ 
+        function openColorPicker()
+        {
+            var colorPicker = document.getElementById("colorpicker");
+            colorPicker.focus();
+            colorPicker.click();
+        }
+
+        /**
+         * Tap handler to ignore double taps
+         *
+         * @param {*} event event parameters
+         **/
+        function tapHandler(event) {
+            if(!tapedTwice) {
+                tapedTwice = true;
+                setTimeout( function() { tapedTwice = false; }, 300 );
+                return false;
+            }
+            event.preventDefault();
+        }
+
+        /**
+         * Prevent default
+         * 
+         * @param {*} event event parameters
+         **/
+        function preventDefault(event) {
+            event.preventDefault() ;
+        }
+
+        function focusout(event)
+        {
+            window.setTimeout(() => {
+                var vp = document.getElementById('vp');
+                vp.setAttribute('content','width=device-width, initial-scale=0.8, maximum-scale=0.8');
+            },100);
+        }
+
+
+
+    function handleKeepAlive()
+    {
+        let overlay = document.getElementById("overlay");
+        fetch('/cmd/keepalive')
+        .then(data => {          
+            console.log('Success:', data);
+            if (data.ok)
+            {
+                overlay.style.display = "none";               
+            } else
+            {
+                overlay.style.display = "block";
+            }
+        })
+        .catch((error) => {
+            let overlay = document.getElementById("overlay");
+            console.log('Error:', error);
+            overlay.style.display = "block";
+        });
+    }
+
+    function pixelChange(event)
+    {
+        var payload = {
+            i: 'd',
+            c: event.color,
+            x: event.position.x,
+            y: event.position.y
+        };
+        var data = new FormData();
+        data.append( "json", JSON.stringify( payload ) );
+        txQueue.enqueue(data);
+    }
+
+    function txData()
+    {
+        if (sending === 0)
+        {
+            if (txQueue.length > 0)
+            {
+                var data = txQueue.dequeue()
+                sending = 500;
+                fetch("/api/matrix/draw",
+                {
+                    method: "POST",
+                    body: data
+                })
+                .then(function(res){ sending = 2 })
+                .then(function(data){ sending = 2 }) //alert( JSON.stringify( data ) )
+            }
+        } else 
+        {
+            if (sending > 0) {
+                sending-=1;
+            }
+        }
+    }
+
+    
+
+    window.setTimeout(function() {
+        requestFullScreen();
+    },1000);
+
+    window.setInterval(txData,1);
+
+    window.setInterval(function() {
+        handleKeepAlive();
+    },5000);
+
+    window.setTimeout(function() {
+        handleKeepAlive();
+        requestFullScreen();
+    },100);
+
+    window.addEventListener("touchmove",preventDefault, { passive: false });
+    window.addEventListener("touchstart",tapHandler, { passive: false });
+    window.onscroll = function () { window.scrollTo(0, 0); };
+    mtxEdit.onpixelchange = pixelChange;
+    
+    </script>
+    <link rel="stylesheet" href="site.css">
+</head>
+<body>
+        <div class="bar">
+            <div class="topcornerleft">
+                <img style="margin-top: -2px" src="favicon/favicon-32x32.png">
+            </div>
+            <div class="title"><script>document.write(document.title);</script></div>
+            <div class="topcorner">
+                <a href="/config/">
+                    <svg class=mdi-icon-32 viewBox="0 0 32 32">
+                        <path fill="#1189DC" d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div id="main" class=main>
+        <center>
+            <table style="margin:10px;" class="colorpickers">
+                
+                <tr>
+                    <td>
+                        <div onclick="clearAll()" title="erase content" class="toolbutton" style="text-align:left;">
+                            <svg style="width:20px;height:20px" viewBox="0 0 24 24">
+                                <path fill="#FFFFFF" d="M16.24,3.56L21.19,8.5C21.97,9.29 21.97,10.55 21.19,11.34L12,20.53C10.44,22.09 7.91,22.09 6.34,20.53L2.81,17C2.03,16.21 2.03,14.95 2.81,14.16L13.41,3.56C14.2,2.78 15.46,2.78 16.24,3.56M4.22,15.58L7.76,19.11C8.54,19.9 9.8,19.9 10.59,19.11L14.12,15.58L9.17,10.63L4.22,15.58Z" />
+                            </svg>
+                        </div>
+                    </td>
+
+                    <td>
+                        <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" />
+                        </svg>
+                    </td>
+
+                    <td><div class="pickerbutton green" onclick="setColor('#00FF00')"></div> </td>
+                    <td><div class="pickerbutton cyan" onclick="setColor('#00FFFF')"></div> </td>
+                    <td><div class="pickerbutton blue" onclick="setColor('#0000FF')"></div> </td>
+                    <td><div class="pickerbutton purple" onclick="setColor('#FF00FF')"></div> </td>
+
+                    <td>
+                        <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" />
+                        </svg>
+                    </td>
+
+                    <td>
+                        <div onclick="uploadImage()" title="upload content" class="toolbutton" style="text-align:left;">
+                            <svg style="width:20px;height:20px" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z" />
+                            </svg>
+                        </div>
+                    </td>
+
+                    
+                </tr>
+                <tr>
+                    <td>
+                        <div id="currentcolor" class="pickerbutton picker" onclick="openColorPicker()"></div>
+                        <input type="color" id="colorpicker" value="#FFFFFF" tabindex=-1 class="hidden">
+                    </td>
+
+                    <td>
+                        <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" />
+                        </svg>
+                    </td>
+    
+                    <td><div class="pickerbutton black" onclick="setColor('#000000')"></div> </td>
+                    <td><div class="pickerbutton white" onclick="setColor('#FFFFFF')"></div> </td>
+                    <td><div class="pickerbutton red" onclick="setColor('#FF0000')"></div> </td>
+                    <td><div class="pickerbutton yellow" onclick="setColor('#FFFF00')"></div> </td>
+
+                    <td>
+                        <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" />
+                        </svg>
+                    </td>
+                    
+                    <td>
+                        <div onclick="downloadImage()" title="download content" class="toolbutton" style="text-align:left;">
+                            <svg style="width:20px;height:20px" viewBox="0 0 24 24">
+                                <path fill="#FFFFFF" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+                            </svg>
+                        </div>
+                    </td>
+
+                </tr>
+            </table>
+            <div class="canvascontainer">
+                <canvas id="matrixcanvas" class="canvas" width="350" height="350">
+    
+                </canvas>
+            </div>
+        </center>
+    </div>
+    <input id="inp" type='file' style="visibility:hidden;" onchange="readFile(event)" />
+    <div id="overlay">
+        <div class="loader"></div>
+    </div>
+    <script>
+        var colorPicker = document.getElementById("colorpicker");
+        colorPicker.addEventListener("input", onColorSet, false);
+        colorPicker.addEventListener("change", onColorSet, false);
+    </script>
+</body>
+</html>
+

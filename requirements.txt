@@ -1,0 +1,4 @@
+htmlmin
+requests
+esptool
+argparse

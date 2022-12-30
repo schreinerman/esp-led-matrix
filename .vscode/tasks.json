@@ -1,0 +1,142 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label":"install: Python Requirements",
+            "type": "shell",
+            "command": "python3 -m pip install -r requirements.txt",
+            "osx":{
+                "command": "python3 -m pip install -r requirements.txt"
+            },
+            "windows":{
+                "command": "python3 -m pip install -r requirements.txt"
+            }
+        },
+        {
+            "label":"install: Arduino CLI",
+            "type": "shell",
+            "command": "apt-get install arduino-cli",
+            "osx":{
+                "command": "brew install arduino-cli"
+            },
+            "options":{
+                "cwd": "${workspaceFolder}"
+            },
+            "windows":{
+                "type":"PowerShell",
+                "command":"Invoke-WebRequest -OutFile arduino-cli_latest_Windows_64bit.zip  https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_64bit.zip;  Expand-Archive -Path arduino-cli_latest_Windows_64bit.zip -DestinationPath bin -Force; Remove-Item arduino-cli_latest_Windows_64bit.zip"
+            }
+        },
+        {
+            "label":"utilities: Update Web Content",
+            "type": "shell",
+            "options":{
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "python3 utils/create_web_store.py",
+            "osx":{
+                "command": "python3 utils/create_web_store.py"
+            },
+            "windows":{
+                "command": "python3 utils\\create_web_store.py"
+            }
+        },
+        {
+            "label": "build: esp8266",
+            "type": "shell",
+            "options":{
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "arduino-cli compile --build-path \"${config:build_path}\" --profile esp8266",
+            "osx":{
+                "command": "/usr/local/bin/arduino-cli compile --build-path \"${config:build_path}\" --profile esp8266",
+            },
+            "linux":{
+                "command": "arduino-cli compile --build-path \"${config:build_path}\" --profile esp8266",
+            },
+            "windows":{
+                "command": "bin\\arduino-cli compile --build-path \"${config:build_path}\" --profile esp8266",
+            },
+            "dependsOn":["utilities: Update Web Content"]
+
+        },
+        {
+            "label": "print: esp8266 options",
+            "type": "shell",
+            "command": "arduino-cli board details -b ${config:board_esp8266}",
+            "osx":{
+                "command": "/usr/local/bin/arduino-cli board details -b ${config:board_esp8266}",
+            },
+            "linux":{
+                "command": "arduino-cli compile board details -b ${config:board_esp8266}",
+            },
+            "windows":{
+                "command": "bin\\arduino-cli compile board details -b ${config:board_esp8266}",
+            },
+
+        },
+        {
+            "label": "build: esp32",
+            "type": "shell",
+            //"command": "arduino-cli compile -b ${config:board_esp32} --board-options \"${config:board_options_esp32}\" --additional-urls \"${config:urls_esp32}\" --build-path \"${config:build_path}\""
+            "command": "arduino-cli compile --build-path \"${config:build_path}\" --profile esp32",
+            "osx":{
+                "command": "/usr/local/bin/arduino-cli compile --build-path \"${config:build_path}\" --profile esp32",
+            },
+            "linux":{
+                "command": "arduino-cli compile compile --build-path \"${config:build_path}\" --profile esp32",
+            },
+            "windows":{
+                "command": "bin\\arduino-cli compile --build-path \"${config:build_path}\" --profile esp32",
+            },
+            "dependsOn":["utilities: Update Web Content"]
+        },
+        {
+            "label": "print: esp32 options",
+            "type": "shell",
+            "command": "arduino-cli board details -b ${config:board_esp32}",
+            "osx":{
+                "command": "/usr/local/bin/arduino-cli board details -b ${config:board_esp32}",
+            },
+            "linux":{
+                "command": "arduino-cli compile board details -b ${config:board_esp32}",
+            },
+            "windows":{
+                "command": "bin\\arduino-cli board details -b ${config:board_esp32}",
+            },
+        },
+        {
+            "label":"utilities: Start Test Webserver",
+            "options": {
+                "cwd": "${workspaceFolder}/html"
+            },
+            "command":"python3 -m http.server 8080"
+        },
+        {
+            "label":"utilities: Upload Binary (via Web)",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/utils"
+            },
+            "command":"python3 upload.py --url ${config:updateurl} --user ${config:updateuser} --password ${config:updatepassword} ../build/${config:fwname}"
+        },
+        {
+            "label":"utilities: Upload Binary (ESP8266 via USB)",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/utils"
+            },
+            "command":"python3 upload.py --interface comport --comport ${config:comport} --mcu esp8266 ../build/${config:fwname}"
+        },
+        {
+            "label":"utilities: Upload Binary (ESP32 via USB)",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/utils"
+            },
+            "command":"python3 upload.py --interface comport --comport ${config:comport} --mcu esp32 ../build/${config:fwname}"
+        }
+    ]
+}
