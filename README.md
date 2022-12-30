@@ -4,6 +4,8 @@ ESP8266 / ESP32 driving an LED Matrix Module (16x16) with running the editor in 
 
 ![Web UI](doc/thumb/webui.jpg) ![Hardware 1](doc/thumb/16x16matrix.jpg) 
 
+(A simple version of the editor is available online at http://www.io-expert.com/ledmatrixeditor)
+
 ## Usage
 
 As soon ESP is booted the first time, a Wifi AP is generated:
