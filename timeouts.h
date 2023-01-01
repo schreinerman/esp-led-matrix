@@ -113,7 +113,9 @@ typedef enum en_timeouts_type
 
 
 
-
+uint32_t Timeouts_GetDiff(uint32_t u32TicksLastUpdate, uint32_t u32TicksNow);
+boolean_t Timeouts_Decrease(void* pHandle,en_timeouts_type_t enType,uint32_t u32Diff,uint32_t u32Min);
+boolean_t Timeouts_Increase(void* pHandle,en_timeouts_type_t enType,uint32_t u32Diff,uint32_t u32Max);
 
 
 //@} // TimeoutsGroup

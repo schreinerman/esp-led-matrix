@@ -140,6 +140,12 @@ boolean_t Timeouts_Decrease(void* pHandle,en_timeouts_type_t enType,uint32_t u32
             break;
     }
 
+       if (u32Tmp == u32Min)
+    {
+        return FALSE;
+    }
+
+
     if ((u32Diff >= (u32Tmp - u32Min)) || (u32Tmp < u32Min))
     {
         u32Tmp = u32Min;
@@ -222,6 +228,11 @@ boolean_t Timeouts_Increase(void* pHandle,en_timeouts_type_t enType,uint32_t u32
         case TimeoutsTypeInt32: 
             u32Tmp = *((int32_t*)pHandle);
             break;
+    }
+
+    if (u32Tmp == u32Max)
+    {
+        return FALSE;
     }
 
     if (((u32Diff + u32Tmp) >= u32Max) || (u32Tmp > u32Max))
